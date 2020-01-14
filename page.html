@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+        
+        <style>
+            body{
+                background-color: #181a1b;
+            }
+            table{
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 5%;
+                border: 5px solid  #666666;
+            }
+            td{
+                height:200px;
+                width:200px;
+                border: 10px solid #666666;
+            }
+        </style>
+
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <table cellspacing="0" id="game">
+
+        </table>
+        
+        <script>
+
+            //Globals
+            const URL = window.location.href;
+            const table = document.querySelector`#game`;
+            //Functions
+            const getUUID = async _ => await(await fetch(`${URL}uuid`, {method : 'POST'})).text();
+            const sendToServer = message => {
+
+                const req = new XMLHttpRequest();
+                req.open('POST', `${URL}send`, true);
+                req.setRequestHeader('Content-Type', 'application/json');
+
+                req.send(JSON.stringify({
+                    data : message
+                }));
+            }
+            const getGame = async _ => await(await fetch(`${URL}game`, {method : 'POST'})).text();
+            const updateTable = array => {
+
+                array.forEach((subarray, i) => subarray.forEach((value, j) => {
+
+                    if(value){
+                        document.getElementById(`${i}${j}`).textContent = 'X';
+                    }
+                    /*To make sure that undefined, null or empty don't trigger this*/
+                    else if(value == false){
+                        document.getElementById(`${i}${j}`).textContent = 'O';
+                    }else{
+                        document.getElementById(`${i}${j}`).textContent = '';
+                    }
+                }));
+            };
+            
+            (async _ => {
+
+                if(!document.cookie){
+
+                    const UUID = await getUUID();
+                    document.cookie = `id=${UUID}`;
+                }
+
+                sendToServer({uuid:document.cookie});
+            })();
+
+            for(let i =0 ; i < 3; i++){
+
+                let _element = document.createElement('tr');
+                table.appendChild(_element);
+
+                for(let j = 0; j < 3; j++){
+
+                    let element = document.createElement('td');
+                    element.setAttribute('style', 'text-align:center; font-size:75px');
+                    element.id = `${i}${j}`;
+                    element.addEventListener('click', async e => sendToServer({uuid : document.cookie , move : e.currentTarget.id}));
+                    table.lastChild.appendChild(element);
+                }
+            }
+            setInterval(async _ => {
+
+                const _game = JSON.parse(await getGame() );
+
+                console.log(_game);
+
+                if(_game._hasStarted){
+                    updateTable(_game._board);
+            }
+        }, 1000);
+        </script>
+        
+    </body>
+</html>
