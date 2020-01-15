@@ -6,6 +6,7 @@ const Board = require('./board.js');
 const Player = require('./player.js');
 const uuidv1 = require('uuid/v1');
 const socket = require('socket.io');
+const dotenv = require('dotenv');
 
 //Globals
 const app = express();
