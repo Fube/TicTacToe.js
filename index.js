@@ -5,62 +5,72 @@ const path = require('path');
 const Board = require('./board.js');
 const Player = require('./player.js');
 const uuidv1 = require('uuid/v1');
+const socket = require('socket.io');
 
 //Globals
 const app = express();
 const port = process.env.port | 3000;
 const html = fs.readFileSync(path.resolve(__dirname, 'page.html'), 'utf8');
 const game = new Board();
+const server = app.listen(port, ()=>{console.log('started');});
+const io = socket(server);
 
 //Code
-app.get('/', (req, res) => res.send(html));
 
-app.post('/uuid',(req,res) => res.send(uuidv1()));
+//Initializes the game session
+app.get('/', (_, res) => res.send(html));
 
-app.post('/game', (req, res) => res.send(game));
 
-app.use(express.json()); // json parser
+io.on('connection', socket => {
 
-app.post('/send', (req, res) => {
+    let id;
 
-    const request = req.body.data;
+    //If the user does not have an id, assign one to them, otherwise, get their id
+    if(!/id/.test(socket.handshake.headers.cookie)){
+        id = uuidv1();
+        socket.emit('assignment', id);
+        id = `id=${id}`;
+    }else{
+        const temp = socket.handshake.headers.cookie;
+        id = temp.split`;`.map(n => n.replace(' ', '')).filter(i => i.substring(0,2) =='id')[0];
+    }
 
-    //Game start logic
-    if(!game.player1 && request.uuid){
-        game.player1 = new Player(request.uuid, true);
-    }else if(!game.player2 && request.uuid && request.uuid != game.player1.name){
-        game.player2 = new Player(request.uuid, false);
+    //Wait until 2 connections (differentiated by their id) are present, then start the game
+    if(id && !game.player1){
+
+        game.player1 = new Player(id, true);
+    }else if(id && !game.player2 && id != game.player1.name){
+
+        game.player2 = new Player(id, false);
         game.hasStarted = true;
     }
-    /*Move logic*/
-    if(game.hasStarted){
 
-        if(request.uuid == game.player1.name && game.turn && game.isAvailable(request.move[0], request.move[1])){
-            game.placeAt(request.move[0], request.move[1]);
-            if(game.isWin()){
-                console.log(game.isWin());
-                game.restart();
-            }else
-                game.nextTurn();
-            
-            console.log(game.turn);
-        }else if(request.uuid == game.player2.name && !game.turn && game.isAvailable(request.move[0], request.move[1])){
-            game.placeAt(request.move[0], request.move[1]);
-            if(game.isWin()){
-                console.log(game.isWin());
-                game.restart();
-            }else
-                game.nextTurn();
-            
-            console.log(game.turn);
+    socket.on('move', ({uuid, move}) => {
+
+        //Do nothing if game has not started or the wanted position is unavailable (is occupied)
+        if(!game.hasStarted || !game.isAvailable(move[0], move[1])) return;
+
+        if(uuid == game.player1.name && game.turn){
+
+            game.placeAt(move[0], move[1]);
+            game.nextTurn();
+        }else if(uuid == game.player2.name && !game.turn){
+
+            game.placeAt(move[0], move[1]);
+            game.nextTurn();
         }
 
-        if(game.turnCount >= 9 && !game.isWin()){
-            console.log("It's a draw :( ");
+        //After every move, check if it a player has won, and if so restart the game and log the winner. If after 9 moves there is no winner, declare it a draw and restart
+        if(game.isWin()){
+            console.log(game.isWin());
+            game.restart();
+        }else if(game.turnCount >= 9 && !game.isWin()){
+            console.log(`It's a draw :(`);
             game.restart();
         }
-    }
+
+        //After every valid move, update the board
+        io.sockets.emit('update', game.board);
+    });
 
 });
-
-app.listen(port, ()=>{console.log('started');});

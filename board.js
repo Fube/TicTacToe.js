@@ -70,33 +70,36 @@ class Board{
     }
 
     restart(){
+        this._turn = true;
+        this._turnCount = 0;
         this._board = [[...new Array(3)], [...new Array(3)], [...new Array(3)]];
     }
 
     isWin(){
-        const instance = this._board;
 
+        const instance = this._board;
+        
         if(
-            instance[0].every(n => n == true)||
-            instance[1].every(n => n == true)||
-            instance[2].every(n => n == true)||
-            [instance[0][0], instance[1][0], instance[2][0]].every(n => n == true)||
-            [instance[1][0], instance[1][1], instance[1][2]].every(n => n == true)||
-            [instance[2][0], instance[2][1], instance[2][2]].every(n => n == true)||
-            [instance[0][0], instance[1][1], instance[2][2]].every(n => n == true)||
-            [instance[2][0], instance[1][1], instance[0][2]].every(n => n == true)
+            instance[0].every(n => n === true)||
+            instance[1].every(n => n === true)||
+            instance[2].every(n => n === true)||
+            [instance[0][0], instance[1][0], instance[2][0]].every(n => n === true)||
+            [instance[1][0], instance[1][1], instance[1][2]].every(n => n === true)||
+            [instance[2][0], instance[2][1], instance[2][2]].every(n => n === true)||
+            [instance[0][0], instance[1][1], instance[2][2]].every(n => n === true)||
+            [instance[2][0], instance[1][1], instance[0][2]].every(n => n === true)
         ){
             return "Player 1 Wins!";
             
-        }else if(
-            instance[0].every(n => n == false)||
-            instance[1].every(n => n == false)||
-            instance[2].every(n => n == false)||
-            [instance[0][0], instance[1][0], instance[2][0]].every(n=>n == false)||
-            [instance[1][0], instance[1][1], instance[1][2]].every(n=>n == false)||
-            [instance[2][0], instance[2][1], instance[2][2]].every(n=>n == false)||
-            [instance[0][0], instance[1][1], instance[2][2]].every(n=>n == false)||
-            [instance[2][0], instance[1][1], instance[0][2]].every(n=>n == false)   
+        }if(
+            instance[0].every(n => n === false)||
+            instance[1].every(n => n === false)||
+            instance[2].every(n => n === false)||
+            [instance[0][0], instance[1][0], instance[2][0]].every(n => n === false)||
+            [instance[0][1], instance[1][1], instance[2][1]].every(n => n === false)||
+            [instance[0][2], instance[1][2], instance[2][2]].every(n => n === false)||
+            [instance[0][0], instance[1][1], instance[2][2]].every(n => n === false)||
+            [instance[2][0], instance[1][1], instance[0][2]].every(n => n === false)   
         ){
             return "Player 2 Wins!";
         }

@@ -37,25 +37,16 @@
         <table cellspacing="0" id="game">
 
         </table>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
         
         <script>
 
             //Globals
             const URL = window.location.href;
             const table = document.querySelector`#game`;
+            const socket = io.connect(URL);
+
             //Functions
-            const getUUID = async _ => await(await fetch(`${URL}uuid`, {method : 'POST'})).text();
-            const sendToServer = message => {
-
-                const req = new XMLHttpRequest();
-                req.open('POST', `${URL}send`, true);
-                req.setRequestHeader('Content-Type', 'application/json');
-
-                req.send(JSON.stringify({
-                    data : message
-                }));
-            }
-            const getGame = async _ => await(await fetch(`${URL}game`, {method : 'POST'})).text();
             const updateTable = array => {
 
                 array.forEach((subarray, i) => subarray.forEach((value, j) => {
@@ -72,16 +63,10 @@
                 }));
             };
             
-            (async _ => {
-
-                if(!document.cookie){
-
-                    const UUID = await getUUID();
-                    document.cookie = `id=${UUID}`;
-                }
-
-                sendToServer({uuid:document.cookie});
-            })();
+            //Events handlers
+            socket.on('update', updateTable);
+            socket.on('assignment', uuid => document.cookie += `id=${uuid}`);
+            
 
             for(let i =0 ; i < 3; i++){
 
@@ -93,20 +78,10 @@
                     let element = document.createElement('td');
                     element.setAttribute('style', 'text-align:center; font-size:75px');
                     element.id = `${i}${j}`;
-                    element.addEventListener('click', async e => sendToServer({uuid : document.cookie , move : e.currentTarget.id}));
+                    element.addEventListener('click', e => socket.emit('move',{uuid : document.cookie, move : e.currentTarget.id}));
                     table.lastChild.appendChild(element);
                 }
             }
-            setInterval(async _ => {
-
-                const _game = JSON.parse(await getGame() );
-
-                console.log(_game);
-
-                if(_game._hasStarted){
-                    updateTable(_game._board);
-            }
-        }, 1000);
         </script>
         
     </body>
